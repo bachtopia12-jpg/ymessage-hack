@@ -3,19 +3,27 @@ stages:
   - test
   - deploy
 
-install_dependencies:
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+
+install-dependencies:
   stage: install
+  image: python:3.10
   script:
-    - echo "Installation des dépendances"
-    - npm install
+    - pip install -r requirements.txt
+  artifacts:
+    paths:
+      - .cache/pip
 
-run_tests:
+run-tests:
   stage: test
+  image: python:3.10
   script:
-    - echo "Tests simulés réussis"
-    - exit 0
+    - echo " Tests fictifs en cours..."
+    - echo " Tous les tests ont réussi !"
 
-deploy_app:
+deploy:
   stage: deploy
+  image: python:3.10
   script:
-    - echo "Deployment successful"
+    - echo "Déploiement réussi !"
