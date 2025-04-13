@@ -102,4 +102,4 @@ def déconnecter():
     print(f"{name} a quitté la salle {salle}")
 
 if __name__ == '__main__':
-    socketio.run(app, debug=True)
+    socketio.run(app, host='0.0.0.0', port=5000, debug=True)
