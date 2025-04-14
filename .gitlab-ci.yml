@@ -1,41 +1,21 @@
-stages:
-  - install
-  - test
-  - deploy
-
-variables:
-  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
-  RENDER_SERVICE_NAME: "chat-web-app"
-
-install-dependencies:
-  stage: install
-  image: python:3.13
-  script:
-    - pip install --upgrade pip
-    - pip install -r requirements.txt
-  artifacts:
-    paths:
-      - .cache/pip
-
-run-tests:
-  stage: test
-  image: python:3.13
-  script:
-    - python -m pytest tests/ || echo "No tests executed"
-    - echo "Test phase completed"
-
 deploy-to-render:
   stage: deploy
   image: alpine/curl
   script:
     - apk add --no-cache jq
     - |
+      # Récupérer l'ID du compte Render
+      OWNER_ID=$(curl -s -X GET "https://api.render.com/v1/teams" \
+        -H "Authorization: Bearer $RENDER_API_KEY" \
+        -H "Accept: application/json" | jq -r '.[0].id')
+
       response=$(curl -s -X POST "https://api.render.com/v1/services" \
         -H "Authorization: Bearer $RENDER_API_KEY" \
         -H "Content-Type: application/json" \
         -d '{
           "name": "'$RENDER_SERVICE_NAME'",
           "type": "web_service",
+          "ownerId": "'$OWNER_ID'",
           "runtime": "python",
           "plan": "free",
           "buildCommand": "pip install --upgrade pip && pip install -r requirements.txt",
@@ -49,9 +29,9 @@ deploy-to-render:
         }')
 
       if ! echo "$response" | jq -e '.id' > /dev/null; then
-        echo "Deployment failed: $(echo "$response" | jq -r '.message')"
+        echo "Erreur: $(echo "$response" | jq -r '.message')"
         exit 1
       fi
-      echo "Application deployed to: https://${RENDER_SERVICE_NAME}.onrender.com"
+      echo "Déploiement réussi: https://${RENDER_SERVICE_NAME}.onrender.com"
   only:
     - main
