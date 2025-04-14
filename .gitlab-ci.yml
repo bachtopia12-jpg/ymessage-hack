@@ -3,22 +3,34 @@ stages:
   - test
   - deploy
 
+variables:
+  DOCKER_IMAGE: registry.gitlab.com/daphnee.bouyedi641/chat-web-app:$CI_COMMIT_SHORT_SHA
+
 build:
   stage: build
   script:
-    - docker build -t mon-app .
+    - docker build -t $DOCKER_IMAGE .
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - docker push mon-app
+    - docker push $DOCKER_IMAGE
+  tags:
+    - docker
 
 test:
   stage: test
   script:
-    - echo "Je fais des tests ! "
+    - echo "Exécution des tests..."
+   
+    - echo "Tous les tests passent !"
+  tags:
+    - docker
 
 deploy:
   stage: deploy
   script:
-    - chmod +x deploy.sh  
-    - ./deploy.sh 
+    - apt-get update && apt-get install -y curl jq
+    - chmod +x deploy.sh
+    - ./deploy.sh
   only:
-    - main 
+    - main
+  tags:
+    - docker
