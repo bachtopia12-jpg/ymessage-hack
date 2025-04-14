@@ -23,7 +23,7 @@ deploy-to-render:
           "envVars": [
             {
               "key": "PYTHON_VERSION",
-              "value": "3.13"
+              "value": "3.10"
             }
           ]
         }')
