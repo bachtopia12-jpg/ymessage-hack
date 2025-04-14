@@ -1,37 +1,24 @@
-deploy-to-render:
-  stage: deploy
-  image: alpine/curl
+stages:
+  - build
+  - test
+  - deploy
+
+build:
+  stage: build
   script:
-    - apk add --no-cache jq
-    - |
-      # Récupérer l'ID du compte Render
-      OWNER_ID=$(curl -s -X GET "https://api.render.com/v1/teams" \
-        -H "Authorization: Bearer $RENDER_API_KEY" \
-        -H "Accept: application/json" | jq -r '.[0].id')
+    - docker build -t mon-app .
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker push mon-app
 
-      response=$(curl -s -X POST "https://api.render.com/v1/services" \
-        -H "Authorization: Bearer $RENDER_API_KEY" \
-        -H "Content-Type: application/json" \
-        -d '{
-          "name": "'$RENDER_SERVICE_NAME'",
-          "type": "web_service",
-          "ownerId": "'$OWNER_ID'",
-          "runtime": "python",
-          "plan": "free",
-          "buildCommand": "pip install --upgrade pip && pip install -r requirements.txt",
-          "startCommand": "python app.py",
-          "envVars": [
-            {
-              "key": "PYTHON_VERSION",
-              "value": "3.10"
-            }
-          ]
-        }')
+test:
+  stage: test
+  script:
+    - echo "Je fais des tests ! "
 
-      if ! echo "$response" | jq -e '.id' > /dev/null; then
-        echo "Erreur: $(echo "$response" | jq -r '.message')"
-        exit 1
-      fi
-      echo "Déploiement réussi: https://${RENDER_SERVICE_NAME}.onrender.com"
+deploy:
+  stage: deploy
+  script:
+    - chmod +x deploy.sh  
+    - ./deploy.sh 
   only:
-    - main
+    - main 
