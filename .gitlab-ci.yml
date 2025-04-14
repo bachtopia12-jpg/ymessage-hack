@@ -8,29 +8,27 @@ variables:
 
 build:
   stage: build
+  image: docker:20.10.16
+  services:
+    - docker:20.10.16-dind
   script:
     - docker build -t $DOCKER_IMAGE .
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker push $DOCKER_IMAGE
-  tags:
-    - docker
 
 test:
   stage: test
+  image: alpine:latest
   script:
     - echo "Exécution des tests..."
-   
     - echo "Tous les tests passent !"
-  tags:
-    - docker
 
 deploy:
   stage: deploy
+  image: debian:bullseye
   script:
     - apt-get update && apt-get install -y curl jq
     - chmod +x deploy.sh
     - ./deploy.sh
   only:
     - main
-  tags:
-    - docker
