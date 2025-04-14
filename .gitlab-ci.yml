@@ -27,7 +27,8 @@ deploy:
   stage: deploy
   image: debian:bullseye
   script:
-    - apt-get update && apt-get install -y curl jq
+    - apt-get update && apt-get install -y curl jq dos2unix
+    - dos2unix deploy.sh || sed -i 's/\r$//' deploy.sh 
     - chmod +x deploy.sh
     - ./deploy.sh
   only:
