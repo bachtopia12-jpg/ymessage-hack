@@ -1,14 +1,19 @@
-# chat-web-app
+# 💬 chat-web-app
 
-Live Chat Application using Python, Flask, HTML, CSS, JavaScript and Socketio. 
+Application de chat en temps réel construite avec **Python**, **Flask**, **Socket.IO**, **HTML**, **CSS**, et **JavaScript**.
 
-Download Python 3.13
+## 🔧 Technologies utilisées
 
-Install Flask and Socket io :
-#pip install Flask 
-#pip install flask-socketio
+- Python 3.13  
+- Flask  
+- Flask-SocketIO  
+- Docker  
+- GitLab CI/CD  
+- Render (déploiement automatique)
 
-To run the code : 
-python main.py
+## 🧪 Lancer l'application en local
 
-Running on : http://127.0.0.1:5000
+1. Installer les dépendances :
+
+```bash
+pip install Flask flask-socketio
