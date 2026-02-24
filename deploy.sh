@@ -1,7 +1,7 @@
 #!/bin/bash
 
-RENDER_SERVICE_NAME="chat-web-app"
-DOCKER_IMAGE="registry.gitlab.com/daphnee.bouyedi641/chat-web-app:$CI_COMMIT_SHORT_SHA"
+RENDER_SERVICE_NAME="ymessage-hack"
+DOCKER_IMAGE="registry.gitlab.com/bachirou/ymessage-hack:$CI_COMMIT_SHORT_SHA"
 TIMEOUT=30
 
 if [ -z "$RENDER_API_KEY" ]; then

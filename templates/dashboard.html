@@ -1,0 +1,125 @@
+{% extends 'base.html' %}
+
+{% block sidebar %}
+    {% if user and user['username'] %}
+        <div class="current-user">
+            <i class="fas fa-user"></i> Utilisateur connecté : <strong>{{ user['username'] }}</strong>
+        </div>
+    {% endif %}
+
+    <h2><i class="fas fa-door-open"></i> Rooms</h2>
+    <div class="room-list">
+        {% for room in rooms %}
+            <a href="{{ url_for('room', room_code=room['code']) }}">{{ room['name'] }}</a>
+        {% endfor %}
+    </div>
+
+    <h2><i class="fas fa-users"></i> Friends</h2>
+    <div class="friend-list">
+        {% for friend in friends %}
+            <a href="{{ url_for('chat', friend_id=friend['id']) }}">{{ friend['username'] }}</a>
+        {% endfor %}
+    </div>
+
+    <a href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i> Logout</a>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <div class="dashboard-header">
+        <h1><i class="fas fa-rocket"></i> Bienvenue sur Ymessage Hack</h1>
+        {% if user and user['username'] %}
+        <p class="subtitle">{{ user['username'] }}, vous êtes maintenant prêt à participer aux défis CTF</p>
+        {% endif %}
+    </div>
+
+    <div class="dashboard-grid">
+        {% if user and user['avatar'] %}
+        <div class="card profile-card">
+            <h2><i class="fas fa-user-circle"></i> Votre profil</h2>
+            <img src="{{ url_for('static', filename='avatars/' + user['avatar']) }}" alt="Avatar" class="profile-avatar">
+            <p class="username-display">{{ user['username'] }}</p>
+        </div>
+        {% endif %}
+
+        <div class="card stats-card">
+            <h2><i class="fas fa-chart-pie"></i> Statistiques des équipes</h2>
+            {% if team_stats %}
+                <div class="team-stats-list">
+                    {% for team in team_stats %}
+                        <div class="team-stat-item">
+                            <div class="team-stat-header">
+                                <span class="team-name">{{ team['team_name'] }}</span>
+                                <span class="team-percent">{{ team['completion_percentage'] }}%</span>
+                            </div>
+                            <div class="team-progress-bar">
+                                <div class="team-progress-fill" style="width: {{ team['completion_percentage'] }}%;"></div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p>Aucune équipe disponible pour le moment.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="dashboard-grid">
+        <div class="card avatar-card">
+            <h2><i class="fas fa-image"></i> Changer d'avatar</h2>
+            <form action="{{ url_for('select_avatar') }}" method="post">
+                <div class="avatar-selection">
+                    {% for avatar in available_avatars %}
+                        <label>
+                            <input type="radio" name="avatar_selection" value="{{ avatar }}" {% if user['avatar'] == avatar %}checked{% endif %}>
+                            <img src="{{ url_for('static', filename='avatars/' + avatar) }}" alt="{{ avatar }}" width="50">
+                        </label>
+                    {% endfor %}
+                </div>
+                <button type="submit">Définir l'avatar</button>
+            </form>
+        </div>
+
+        <div class="card action-card">
+            <h2><i class="fas fa-user-plus"></i> Ajouter un ami</h2>
+            <form action="{{ url_for('add_friend') }}" method="post">
+                <input type="text" name="username" placeholder="Nom d'utilisateur" required>
+                <button type="submit"><i class="fas fa-paper-plane"></i> Envoyer une demande</button>
+            </form>
+        </div>
+
+        <div class="card action-card">
+            <h2><i class="fas fa-plus"></i> Créer une salle</h2>
+            <form action="{{ url_for('create_room') }}" method="post">
+                <input type="text" name="room_name" placeholder="Nom de la salle" required>
+                <button type="submit"><i class="fas fa-plus"></i> Créer</button>
+            </form>
+        </div>
+
+        <div class="card action-card">
+            <h2><i class="fas fa-sign-in-alt"></i> Rejoindre une salle</h2>
+            <form action="{{ url_for('join_room_route') }}" method="post">
+                <input type="text" name="room_code" placeholder="Code de la salle" required>
+                <button type="submit"><i class="fas fa-sign-in-alt"></i> Rejoindre</button>
+            </form>
+        </div>
+    </div>
+
+    {% if friend_requests %}
+    <div class="card requests-card">
+        <h2><i class="fas fa-user-friends"></i> Demandes d'amis ({{ friend_requests|length }})</h2>
+        <div class="requests-list">
+            {% for request in friend_requests %}
+                <div class="request-item">
+                    <span class="request-username">{{ request['username'] }}</span>
+                    <div class="request-actions">
+                        <a href="{{ url_for('accept_friend', request_id=request['id']) }}" class="btn-accept"><i class="fas fa-check"></i> Accepter</a>
+                        <a href="{{ url_for('decline_friend', request_id=request['id']) }}" class="btn-decline"><i class="fas fa-times"></i> Refuser</a>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

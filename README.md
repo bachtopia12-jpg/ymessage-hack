@@ -1,4 +1,4 @@
-# 💬 chat-web-app
+# 💬 Ymessage Hack
 
 Application de chat en temps réel construite avec **Python**, **Flask**, **Socket.IO**, **HTML**, **CSS**, et **JavaScript**.
 
@@ -32,74 +32,74 @@ Construire l’image Docker :
 
 bash
 Copier
-Modifier
-docker build -t chat-web-app .
-Lancer le conteneur :
+# 💬 Ymessage Hack
 
-bash
-Copier
-Modifier
-docker run -p 5000:5000 chat-web-app
-L’application sera accessible sur http://localhost:5000
+Application web de chat en temps réel développée avec Flask et Socket.IO.
 
-☁️ Déploiement automatique (Render + GitLab CI/CD)
-Le projet est déployé automatiquement sur Render via GitLab CI/CD.
+## 🔧 Technologies
 
-Fonctionnement :
-À chaque git push, GitLab déclenche un pipeline.
+- Python 3
+- Flask
+- Flask-SocketIO
+- SQLite
+- Docker
+- GitLab CI/CD
 
-Le script deploy.sh envoie la dernière image Docker vers Render.
+## 🚀 Lancement du projet
 
-Render met à jour automatiquement le service.
+### En local
 
-Lien de l’application en ligne :
-🔗 https://chat-web-app.onrender.com (à remplacer par ton lien réel si besoin)
+1. Installer les dépendances
 
-📂 Arborescence du projet
-cpp
-Copier
-Modifier
-chat-web-app/
+```bash
+pip install -r requirements.txt
+```
+
+2. Lancer l'application
+
+```bash
+python main.py
+```
+
+3. Ouvrir dans le navigateur
+
+```text
+http://127.0.0.1:5000
+```
+
+### Avec Docker
+
+```bash
+docker build -t ymessage-hack .
+docker run -p 5000:5000 ymessage-hack
+```
+
+## 📦 Fonctionnalités principales
+
+- Inscription / connexion utilisateur
+- Gestion d'avatars
+- Chat en temps réel (salles publiques et privées)
+- Ajout d'amis et demandes d'amis
+- Partage de messages texte/audio/pdf
+- Appels vidéo (WebRTC)
+
+## 📁 Structure simplifiée
+
+```text
+ymessage-hack/
 ├── main.py
+├── database.py
 ├── templates/
 ├── static/
 ├── Dockerfile
+├── docker-compose.yml
 ├── .gitlab-ci.yml
 ├── deploy.sh
 └── README.md
-🚀 Phase 4 – Automatisation du déploiement
-Objectif :
-Déployer automatiquement l’application Dockerisée après chaque modification.
+```
 
-Étapes réalisées :
-✅ Modification du pipeline .gitlab-ci.yml pour déployer sur Render.
+## 👤 Comptes du projet
 
-✅ Écriture d’un script Bash deploy.sh pour envoyer l’image Docker.
+- GitHub : https://github.com/bachtopia12-jpg
+- GitLab : https://gitlab.com/bachirou
 
-✅ Test du déploiement en poussant un nouveau commit.
-
-Pour tester le déploiement :
-bash
-Copier
-Modifier
-git add .
-git commit -m "Test auto-deploy via pipeline"
-git push
-Puis :
-
-Aller dans GitLab → CI/CD > Pipelines et vérifier que le pipeline se déclenche.
-
-Aller sur Render → Vérifier si le service est mis à jour.
-
-Si tout fonctionne, la Phase 4 est validée 🎉
-
- Auteur
-Daphnée Bouyedi
-MAYOUMA Johon Micael
-Projet académique – Flash Chat Web App
-
-yaml
-Copier
-Modifier
-
----

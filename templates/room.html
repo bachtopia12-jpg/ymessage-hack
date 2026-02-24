@@ -1,0 +1,248 @@
+{% extends 'base.html' %}
+
+{% block sidebar %}
+    <h2>{{ room['name'] }}</h2>
+    <p>Code: {{ room['code'] }}</p>
+    <a href="{{ url_for('dashboard') }}"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
+{% endblock %}
+
+{% block content %}
+<div class="chat-container">
+    <div class="chat-main">
+        <div class="messages" id="messages">
+            {% for message in messages %}
+                <div class="message">
+                    <div class="avatar">
+                        <img src="{{ url_for('static', filename='avatars/' + (message['avatar'] or 'avatar1.jpg')) }}" alt="Avatar">
+                    </div>
+                    <div class="message-content">
+                        <b>{{ message['username'] }}</b>:
+                        {% if message.type == 'image' %}
+                            <img src="{{ message.content }}" width="200">
+                        {% elif message.type == 'audio' %}
+                            <audio controls src="{{ message.content }}"></audio>
+                        {% elif message.type == 'video' %}
+                            <video width="320" height="240" controls>
+                                <source src="{{ message.content }}" type="video/mp4">
+                                Your browser does not support the video tag.
+                            </video>
+                        {% elif message.type == 'pdf' %}
+                            <a href="{{ message.content }}" target="_blank">PDF Document</a>
+                        {% else %}
+                            {{ message.content }}
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+        <div class="message-input">
+            <input type="text" id="message_input" placeholder="Enter message">
+            <button id="send_button"><i class="fas fa-paper-plane"></i></button>
+            <button id="record-btn"><i class="fas fa-microphone"></i></button>
+            <input type="file" id="pdf-input" accept="application/pdf" style="display: none;">
+            <button id="send-pdf-btn"><i class="fas fa-file-pdf"></i></button>
+            <button id="startCall"><i class="fas fa-video"></i></button>
+        </div>
+    </div>
+    <div id="videoModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <div class="video-call-container">
+                <div class="video-container">
+                    <video id="localVideo" autoplay playsinline muted></video>
+                    <video id="remoteVideo" autoplay playsinline></video>
+                </div>
+                <div class="call-controls">
+                    <button id="endCall"><i class="fas fa-phone-slash"></i> End Call</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    var socket = io.connect('http://' + document.domain + ':' + location.port);
+
+    socket.on('connect', function() {
+        socket.emit('join', {room: '{{ room['code'] }}'});
+    });
+
+    socket.on('message', function(data) {
+        const messages = document.getElementById('messages');
+        const messageDiv = document.createElement('div');
+        messageDiv.classList.add('message');
+        
+        const avatarDiv = document.createElement('div');
+        avatarDiv.classList.add('avatar');
+        const avatarImg = document.createElement('img');
+        avatarImg.src = "{{ url_for('static', filename='avatars/') }}" + (data.avatar || 'avatar1.jpg');
+        avatarImg.alt = "Avatar";
+        avatarDiv.appendChild(avatarImg);
+        
+        const contentDiv = document.createElement('div');
+        contentDiv.classList.add('message-content');
+        
+        let content;
+        if (data.type === 'image') {
+            content = `<img src="${data.msg}" width="200">`;
+        } else if (data.type === 'audio') {
+            content = `<audio controls src="${data.msg}"></audio>`;
+        } else if (data.type === 'video') {
+            content = `<video width="320" height="240" controls><source src="${data.msg}" type="video/mp4"></video>`;
+        } else if (data.type === 'pdf') {
+            content = `<a href="${data.msg}" target="_blank">PDF Document</a>`;
+        } else {
+            content = data.msg;
+        }
+        
+        contentDiv.innerHTML = `<b>${data.user}</b>: ${content}`;
+
+        messageDiv.appendChild(avatarDiv);
+        messageDiv.appendChild(contentDiv);
+        messages.appendChild(messageDiv);
+    });
+
+    document.getElementById('send_button').onclick = function() {
+        const messageInput = document.getElementById('message_input');
+        socket.emit('message', {msg: messageInput.value, room: '{{ room['code'] }}'});
+        messageInput.value = '';
+    };
+
+    document.getElementById('send-pdf-btn').addEventListener('click', () => document.getElementById('pdf-input').click());
+
+    document.getElementById('pdf-input').addEventListener('change', (event) => {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (e) => socket.emit('pdf', { data: e.target.result, room: '{{ room['code'] }}' });
+            reader.readAsDataURL(file);
+        }
+    });
+    
+    const recordBtn = document.getElementById("record-btn");
+    let mediaRecorder;
+    let audioChunks = [];
+
+    recordBtn.addEventListener("click", () => {
+        if (mediaRecorder && mediaRecorder.state === "recording") {
+            mediaRecorder.stop();
+            recordBtn.innerHTML = '<i class="fas fa-microphone"></i>';
+        } else {
+            navigator.mediaDevices.getUserMedia({ audio: true })
+                .then(stream => {
+                    mediaRecorder = new MediaRecorder(stream);
+                    mediaRecorder.start();
+                    audioChunks = [];
+                    recordBtn.innerHTML = '<i class="fas fa-stop"></i>';
+
+                    mediaRecorder.addEventListener("dataavailable", event => {
+                        audioChunks.push(event.data);
+                    });
+
+                    mediaRecorder.addEventListener("stop", () => {
+                        const audioBlob = new Blob(audioChunks);
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            socket.emit("audio", { data: e.target.result, room: '{{ room['code'] }}' });
+                        };
+                        reader.readAsDataURL(audioBlob);
+                    });
+                });
+        }
+    });
+
+    const videoModal = document.getElementById('videoModal');
+    const startCallButton = document.getElementById('startCall');
+    const localVideo = document.getElementById('localVideo');
+    const remoteVideo = document.getElementById('remoteVideo');
+    const endCallButton = document.getElementById('endCall');
+    const closeBtn = document.getElementsByClassName("close")[0];
+    
+    let localStream;
+    let peerConnection;
+    const config = {
+        iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+    };
+
+    startCallButton.onclick = async () => {
+        videoModal.style.display = "block";
+        localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        localVideo.srcObject = localStream;
+        
+        socket.emit('webrtc_offer', { room: '{{ room['code'] }}' });
+    };
+
+    closeBtn.onclick = () => {
+        videoModal.style.display = "none";
+        if (peerConnection) {
+            peerConnection.close();
+        }
+        if (localStream) {
+            localStream.getTracks().forEach(track => track.stop());
+        }
+        localVideo.srcObject = null;
+        remoteVideo.srcObject = null;
+    };
+    
+    endCallButton.onclick = () => {
+        videoModal.style.display = "none";
+        if (peerConnection) {
+            peerConnection.close();
+        }
+        if (localStream) {
+            localStream.getTracks().forEach(track => track.stop());
+        }
+        localVideo.srcObject = null;
+        remoteVideo.srcObject = null;
+    };
+
+    window.onclick = (event) => {
+        if (event.target == videoModal) {
+            videoModal.style.display = "none";
+            if (peerConnection) {
+                peerConnection.close();
+            }
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+            }
+            localVideo.srcObject = null;
+            remoteVideo.srcObject = null;
+        }
+    };
+
+    socket.on('webrtc_offer', async (data) => {
+        peerConnection = new RTCPeerConnection(config);
+        localStream.getTracks().forEach(track => {
+            peerConnection.addTrack(track, localStream);
+        });
+        
+        peerConnection.ontrack = event => {
+            remoteVideo.srcObject = event.streams[0];
+        };
+        
+        peerConnection.onicecandidate = event => {
+            if (event.candidate) {
+                socket.emit('webrtc_ice_candidate', { room: '{{ room['code'] }}', candidate: event.candidate });
+            }
+        };
+
+        if (data && data.sdp) {
+            await peerConnection.setRemoteDescription(new RTCSessionDescription(data.sdp));
+            const answer = await peerConnection.createAnswer();
+            await peerConnection.setLocalDescription(answer);
+            socket.emit('webrtc_answer', { room: '{{ room['code'] }}', sdp: peerConnection.localDescription });
+        } else {
+            const offer = await peerConnection.createOffer();
+            await peerConnection.setLocalDescription(offer);
+            socket.emit('webrtc_offer', { room: '{{ room['code'] }}', sdp: peerConnection.localDescription });
+        }
+    });
+
+    socket.on('webrtc_answer', async (data) => {
+        await peerConnection.setRemoteDescription(new RTCSessionDescription(data.sdp));
+    });
+
+    socket.on('webrtc_ice_candidate', async (data) => {
+        await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
+    });
+</script>
+{% endblock %}
