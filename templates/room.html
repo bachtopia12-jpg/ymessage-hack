@@ -101,11 +101,24 @@
         messages.appendChild(messageDiv);
     });
 
-    document.getElementById('send_button').onclick = function() {
-        const messageInput = document.getElementById('message_input');
-        socket.emit('message', {msg: messageInput.value, room: '{{ room['code'] }}'});
-        messageInput.value = '';
-    };
+    const messageInput = document.getElementById('message_input');
+    const sendButton = document.getElementById('send_button');
+
+    function sendMessage() {
+        const msg = messageInput.value.trim();
+        if (msg !== '') {
+            socket.emit('message', {msg: msg, room: '{{ room['code'] }}'});
+            messageInput.value = '';
+        }
+    }
+
+    sendButton.onclick = sendMessage;
+
+    messageInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            sendMessage();
+        }
+    });
 
     document.getElementById('send-pdf-btn').addEventListener('click', () => document.getElementById('pdf-input').click());
 
