@@ -1,105 +1,61 @@
-# 💬 Ymessage Hack
+# Ymessage Chat
 
-Application de chat en temps réel construite avec **Python**, **Flask**, **Socket.IO**, **HTML**, **CSS**, et **JavaScript**.
+Ymessage Chat est une application de messagerie instantanée permettant de discuter en temps réel via des salons publics ou privés. Le projet utilise Python avec le framework Flask et Socket.IO pour la communication bidirectionnelle.
 
-## 🔧 Technologies utilisées
+## Technologies
 
-- Python 3.13  
-- Flask  
-- Flask-SocketIO  
-- Docker  
-- GitLab CI/CD  
-- Render (déploiement automatique)
+- Langage : Python 3
+- Framework Web : Flask
+- Communication : Flask-SocketIO
+- Base de données : SQLite
+- Conteneurisation : Docker
+- CI/CD : GitLab CI
 
-## 🧪 Lancer l'application en local
+## Installation et lancement
 
-1. Installer les dépendances :
+### Configuration locale
 
+1. Installation des dépendances nécessaires :
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+2. Lancement du serveur :
+   ```bash
+   python main.py
+   ```
+
+3. L'application est ensuite accessible à l'adresse suivante :
+   http://127.0.0.1:5000
+
+### Utilisation avec Docker
+
+Il est également possible de lancer le projet via Docker :
 ```bash
-pip install Flask flask-socketio
-Lancer l'application :
-
-bash
-Copier
-Modifier
-python main.py
-Accéder à l'application :
-
-http://127.0.0.1:5000
-
-🐳 Lancer l’application avec Docker
-Construire l’image Docker :
-
-bash
-Copier
-# 💬 Ymessage Hack
-
-Application web de chat en temps réel développée avec Flask et Socket.IO.
-
-## 🔧 Technologies
-
-- Python 3
-- Flask
-- Flask-SocketIO
-- SQLite
-- Docker
-- GitLab CI/CD
-
-## 🚀 Lancement du projet
-
-### En local
-
-1. Installer les dépendances
-
-```bash
-pip install -r requirements.txt
+docker build -t ymessage-chat .
+docker run -p 5000:5000 ymessage-chat
 ```
 
-2. Lancer l'application
+## Fonctionnalités
 
-```bash
-python main.py
-```
+- Système d'authentification (inscription et connexion)
+- Personnalisation du profil avec gestion d'avatars
+- Messagerie instantanée en temps réel
+- Création de salons de discussion
+- Gestion de liste d'amis et de demandes d'ajout
+- Transfert de fichiers (images, audio, PDF)
+- Support des appels vidéo via WebRTC
 
-3. Ouvrir dans le navigateur
+## Structure du projet
 
-```text
-http://127.0.0.1:5000
-```
+- main.py : Point d'entrée de l'application et gestion des événements Socket.IO.
+- database.py : Gestion des modèles et de la base de données SQLite.
+- templates/ : Fichiers HTML pour l'interface utilisateur.
+- static/ : Ressources statiques (CSS, JavaScript, images, uploads).
+- Dockerfile / docker-compose.yml : Configuration pour le déploiement conteneurisé.
+- .gitlab-ci.yml : Pipeline de déploiement continu.
 
-### Avec Docker
-
-```bash
-docker build -t ymessage-hack .
-docker run -p 5000:5000 ymessage-hack
-```
-
-## 📦 Fonctionnalités principales
-
-- Inscription / connexion utilisateur
-- Gestion d'avatars
-- Chat en temps réel (salles publiques et privées)
-- Ajout d'amis et demandes d'amis
-- Partage de messages texte/audio/pdf
-- Appels vidéo (WebRTC)
-
-## 📁 Structure simplifiée
-
-```text
-ymessage-hack/
-├── main.py
-├── database.py
-├── templates/
-├── static/
-├── Dockerfile
-├── docker-compose.yml
-├── .gitlab-ci.yml
-├── deploy.sh
-└── README.md
-```
-
-## 👤 Comptes du projet
+## Liens
 
 - GitHub : https://github.com/bachtopia12-jpg
 - GitLab : https://gitlab.com/bachirou
-

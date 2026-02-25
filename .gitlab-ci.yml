@@ -8,27 +8,28 @@ variables:
 
 build:
   stage: build
-  image: docker:20.10.16
+  image: docker:24.0.5
   services:
-    - docker:20.10.16-dind
+    - docker:24.0.5-dind
   script:
-    - docker build -t $DOCKER_IMAGE .
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker build -t $DOCKER_IMAGE .
     - docker push $DOCKER_IMAGE
 
 test:
   stage: test
-  image: alpine:latest
+  image: python:3.10-slim
   script:
-    - echo "Exécution des tests..."
-    - echo "Tous les tests passent !"
+    - pip install -r requirements.txt
+    - python -m compileall .
+    - echo "Tests de compilation réussis."
 
 deploy:
   stage: deploy
-  image: debian:bullseye
+  image: debian:bullseye-slim
   script:
-    - apt-get update && apt-get install -y curl jq dos2unix
-    - dos2unix deploy.sh || sed -i 's/\r$//' deploy.sh 
+    - apt-get update && apt-get install -y curl jq
+    - sed -i 's/\r$//' deploy.sh
     - chmod +x deploy.sh
     - ./deploy.sh
   only:
