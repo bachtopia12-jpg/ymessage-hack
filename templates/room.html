@@ -45,15 +45,17 @@
         </div>
     </div>
     <div id="videoModal" class="modal">
-        <div class="modal-content">
+        <div class="modal-content video-modal-content">
             <span class="close">&times;</span>
             <div class="video-call-container">
-                <div class="video-container">
-                    <video id="localVideo" autoplay playsinline muted></video>
-                    <video id="remoteVideo" autoplay playsinline></video>
+                <div class="video-grid" id="video-grid">
+                    <div class="video-box">
+                        <video id="localVideo" autoplay playsinline muted></video>
+                        <span class="video-label">Moi</span>
+                    </div>
                 </div>
                 <div class="call-controls">
-                    <button id="endCall"><i class="fas fa-phone-slash"></i> End Call</button>
+                    <button id="endCall" class="btn-decline"><i class="fas fa-phone-slash"></i> Quitter l'appel</button>
                 </div>
             </div>
         </div>
@@ -86,180 +88,189 @@
         contentDiv.classList.add('message-content');
         
         let content;
-        if (data.type === 'image') {
-            content = `<img src="${data.msg}" width="200">`;
-        } else if (data.type === 'audio') {
+        if (data.type === 'audio') {
             content = `<audio controls src="${data.msg}"></audio>`;
-        } else if (data.type === 'video') {
-            content = `<video width="320" height="240" controls><source src="${data.msg}" type="video/mp4"></video>`;
         } else if (data.type === 'pdf') {
-            content = `<a href="${data.msg}" target="_blank">PDF Document</a>`;
+            content = `<a href="${data.msg}" target="_blank" class="pdf-link"><i class="fas fa-file-pdf"></i> Document PDF</a>`;
         } else {
             content = data.msg;
         }
         
         contentDiv.innerHTML = `<b>${data.user}</b>: ${content}`;
-
         messageDiv.appendChild(avatarDiv);
         messageDiv.appendChild(contentDiv);
         messages.appendChild(messageDiv);
+        messages.scrollTop = messages.scrollHeight;
     });
 
+    // Envoi de messages
     const messageInput = document.getElementById('message_input');
     const sendButton = document.getElementById('send_button');
-
     function sendMessage() {
         const msg = messageInput.value.trim();
-        if (msg !== '') {
+        if (msg) {
             socket.emit('message', {msg: msg, room: '{{ room['code'] }}'});
             messageInput.value = '';
         }
     }
-
     sendButton.onclick = sendMessage;
+    messageInput.onkeypress = (e) => { if(e.key === 'Enter') sendMessage(); };
 
-    messageInput.addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            sendMessage();
-        }
-    });
-
-    document.getElementById('send-pdf-btn').addEventListener('click', () => document.getElementById('pdf-input').click());
-
-    document.getElementById('pdf-input').addEventListener('change', (event) => {
-        const file = event.target.files[0];
+    // PDF
+    document.getElementById('send-pdf-btn').onclick = () => document.getElementById('pdf-input').click();
+    document.getElementById('pdf-input').onchange = (e) => {
+        const file = e.target.files[0];
         if (file) {
             const reader = new FileReader();
-            reader.onload = (e) => socket.emit('pdf', { data: e.target.result, room: '{{ room['code'] }}' });
+            reader.onload = (ev) => socket.emit('pdf', { data: ev.target.result, room: '{{ room['code'] }}' });
             reader.readAsDataURL(file);
         }
-    });
-    
+    };
+
+    // Notes Vocales
     const recordBtn = document.getElementById("record-btn");
     let mediaRecorder;
     let audioChunks = [];
-
-    recordBtn.addEventListener("click", () => {
+    recordBtn.onclick = async () => {
         if (mediaRecorder && mediaRecorder.state === "recording") {
             mediaRecorder.stop();
+            recordBtn.classList.remove('recording');
             recordBtn.innerHTML = '<i class="fas fa-microphone"></i>';
         } else {
-            navigator.mediaDevices.getUserMedia({ audio: true })
-                .then(stream => {
-                    mediaRecorder = new MediaRecorder(stream);
-                    mediaRecorder.start();
-                    audioChunks = [];
-                    recordBtn.innerHTML = '<i class="fas fa-stop"></i>';
-
-                    mediaRecorder.addEventListener("dataavailable", event => {
-                        audioChunks.push(event.data);
-                    });
-
-                    mediaRecorder.addEventListener("stop", () => {
-                        const audioBlob = new Blob(audioChunks);
-                        const reader = new FileReader();
-                        reader.onload = function(e) {
-                            socket.emit("audio", { data: e.target.result, room: '{{ room['code'] }}' });
-                        };
-                        reader.readAsDataURL(audioBlob);
-                    });
-                });
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+                mediaRecorder.ondataavailable = (e) => audioChunks.push(e.data);
+                mediaRecorder.onstop = () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    const reader = new FileReader();
+                    reader.onload = (ev) => socket.emit("audio", { data: ev.target.result, room: '{{ room['code'] }}' });
+                    reader.readAsDataURL(audioBlob);
+                    stream.getTracks().forEach(t => t.stop());
+                };
+                mediaRecorder.start();
+                recordBtn.classList.add('recording');
+                recordBtn.innerHTML = '<i class="fas fa-stop"></i>';
+            } catch (err) { alert("Micro non accessible"); }
         }
-    });
+    };
 
+    // Vidéo (WebRTC)
     const videoModal = document.getElementById('videoModal');
-    const startCallButton = document.getElementById('startCall');
+    const startCallBtn = document.getElementById('startCall');
+    const videoGrid = document.getElementById('video-grid');
     const localVideo = document.getElementById('localVideo');
-    const remoteVideo = document.getElementById('remoteVideo');
-    const endCallButton = document.getElementById('endCall');
-    const closeBtn = document.getElementsByClassName("close")[0];
+    const endCallBtn = document.getElementById('endCall');
+    const closeBtn = document.querySelector(".close");
     
     let localStream;
-    let peerConnection;
-    const config = {
-        iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+    let peers = {};
+    const iceConfig = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
+
+    async function setupLocalStream() {
+        try {
+            localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            localVideo.srcObject = localStream;
+            videoModal.style.display = "block";
+            return true;
+        } catch (e) { alert("Caméra non accessible"); return false; }
+    }
+
+    startCallBtn.onclick = async () => {
+        if (await setupLocalStream()) {
+            socket.emit('webrtc_offer', { room: '{{ room['code'] }}', start: true, from: '{{ session['username'] }}' });
+        }
     };
 
-    startCallButton.onclick = async () => {
-        videoModal.style.display = "block";
-        localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-        localVideo.srcObject = localStream;
-        
-        socket.emit('webrtc_offer', { room: '{{ room['code'] }}' });
-    };
-
-    closeBtn.onclick = () => {
+    function stopCall() {
         videoModal.style.display = "none";
-        if (peerConnection) {
-            peerConnection.close();
-        }
-        if (localStream) {
-            localStream.getTracks().forEach(track => track.stop());
-        }
-        localVideo.srcObject = null;
-        remoteVideo.srcObject = null;
-    };
-    
-    endCallButton.onclick = () => {
-        videoModal.style.display = "none";
-        if (peerConnection) {
-            peerConnection.close();
-        }
-        if (localStream) {
-            localStream.getTracks().forEach(track => track.stop());
-        }
-        localVideo.srcObject = null;
-        remoteVideo.srcObject = null;
-    };
-
-    window.onclick = (event) => {
-        if (event.target == videoModal) {
-            videoModal.style.display = "none";
-            if (peerConnection) {
-                peerConnection.close();
-            }
-            if (localStream) {
-                localStream.getTracks().forEach(track => track.stop());
-            }
-            localVideo.srcObject = null;
-            remoteVideo.srcObject = null;
-        }
-    };
+        if (localStream) localStream.getTracks().forEach(t => t.stop());
+        Object.values(peers).forEach(p => p.close());
+        peers = {};
+        const boxes = videoGrid.querySelectorAll('.video-box:not(:first-child)');
+        boxes.forEach(b => b.remove());
+    }
+    endCallBtn.onclick = stopCall;
+    closeBtn.onclick = stopCall;
 
     socket.on('webrtc_offer', async (data) => {
-        peerConnection = new RTCPeerConnection(config);
-        localStream.getTracks().forEach(track => {
-            peerConnection.addTrack(track, localStream);
-        });
-        
-        peerConnection.ontrack = event => {
-            remoteVideo.srcObject = event.streams[0];
-        };
-        
-        peerConnection.onicecandidate = event => {
-            if (event.candidate) {
-                socket.emit('webrtc_ice_candidate', { room: '{{ room['code'] }}', candidate: event.candidate });
+        if (data.start && !localStream) {
+            if (confirm(data.from + " a lancé un appel vidéo. Rejoindre ?")) {
+                if (await setupLocalStream()) {
+                    socket.emit('webrtc_offer', { room: '{{ room['code'] }}', from: '{{ session['username'] }}' });
+                }
             }
-        };
+            return;
+        }
 
-        if (data && data.sdp) {
-            await peerConnection.setRemoteDescription(new RTCSessionDescription(data.sdp));
-            const answer = await peerConnection.createAnswer();
-            await peerConnection.setLocalDescription(answer);
-            socket.emit('webrtc_answer', { room: '{{ room['code'] }}', sdp: peerConnection.localDescription });
-        } else {
-            const offer = await peerConnection.createOffer();
-            await peerConnection.setLocalDescription(offer);
-            socket.emit('webrtc_offer', { room: '{{ room['code'] }}', sdp: peerConnection.localDescription });
+        if (data.sdp) {
+            const pc = getOrCreatePeer(data.from);
+            await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
+            const answer = await pc.createAnswer();
+            await pc.setLocalDescription(answer);
+            socket.emit('webrtc_answer', { room: '{{ room['code'] }}', sdp: pc.localDescription, from: '{{ session['username'] }}', to: data.from });
+        } else if (!data.start) {
+            const pc = getOrCreatePeer(data.from);
+            const offer = await pc.createOffer();
+            await pc.setLocalDescription(offer);
+            socket.emit('webrtc_offer', { room: '{{ room['code'] }}', sdp: pc.localDescription, from: '{{ session['username'] }}', to: data.from });
         }
     });
 
     socket.on('webrtc_answer', async (data) => {
-        await peerConnection.setRemoteDescription(new RTCSessionDescription(data.sdp));
+        if (data.to === '{{ session['username'] }}') {
+            const pc = peers[data.from];
+            if (pc) await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
+        }
     });
 
     socket.on('webrtc_ice_candidate', async (data) => {
-        await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
+        if (data.to === '{{ session['username'] }}') {
+            const pc = peers[data.from];
+            if (pc) await pc.setIceCandidate(new RTCIceCandidate(data.candidate));
+        }
     });
-</script>
+
+    function getOrCreatePeer(remoteUser) {
+        if (peers[remoteUser]) return peers[remoteUser];
+        
+        const pc = new RTCPeerConnection(iceConfig);
+        peers[remoteUser] = pc;
+
+        localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+
+        pc.onicecandidate = (e) => {
+            if (e.candidate) {
+                socket.emit('webrtc_ice_candidate', { 
+                    room: '{{ room['code'] }}', 
+                    candidate: e.candidate, 
+                    from: '{{ session['username'] }}',
+                    to: remoteUser 
+                });
+            }
+        };
+
+        pc.ontrack = (e) => {
+            let vBox = document.getElementById('video-' + remoteUser);
+            if (!vBox) {
+                vBox = document.createElement('div');
+                vBox.id = 'video-' + remoteUser;
+                vBox.className = 'video-box';
+                const v = document.createElement('video');
+                v.autoplay = true;
+                v.playsinline = true;
+                const l = document.createElement('span');
+                l.className = 'video-label';
+                l.innerText = remoteUser;
+                vBox.appendChild(v);
+                vBox.appendChild(l);
+                videoGrid.appendChild(vBox);
+            }
+            vBox.querySelector('video').srcObject = e.streams[0];
+        };
+
+        return pc;
+    }
+</script></script>
 {% endblock %}

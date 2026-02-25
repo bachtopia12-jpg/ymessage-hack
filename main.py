@@ -18,6 +18,10 @@ app.config["DATABASE"] = "database.db"
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 app.config['AVATAR_FOLDER'] = 'static/avatars'
 
+# Ensure directories exist
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+os.makedirs(app.config['AVATAR_FOLDER'], exist_ok=True)
+
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
 
 # Initialize database on app startup
@@ -412,7 +416,7 @@ def handle_pdf(data):
         with open(filepath, "wb") as f:
             f.write(pdf_data)
         
-        url = f"/static/pdfs/{filename}"
+        url = f"/static/uploads/{filename}"
         
         db.execute(
             'INSERT INTO messages (room_id, user_id, content, type, timestamp) VALUES (?, ?, ?, ?, ?)',
