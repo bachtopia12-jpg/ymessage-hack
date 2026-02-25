@@ -21,7 +21,7 @@ test:
   image: python:3.10-slim
   script:
     - pip install -r requirements.txt pytest
-    - pytest tests/
+    - pytest -vv tests/
   allow_failure: true
 
 deploy:
@@ -30,6 +30,7 @@ deploy:
   script:
     - apt-get update && apt-get install -y curl jq
     - sed -i 's/\r$//' deploy.sh
+    - sed -i 's/\r$//' requirements.txt
     - chmod +x deploy.sh
     - ./deploy.sh
   only:
