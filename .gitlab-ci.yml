@@ -21,6 +21,7 @@ test:
   image: python:3.10-slim
   script:
     - pip install -r requirements.txt pytest
+    - export PYTHONPATH=$PYTHONPATH:.
     - pytest -vv tests/
   allow_failure: true
 
