@@ -45,5 +45,5 @@ if echo "$API_RESPONSE" | jq -e '.error' >/dev/null; then
   echo "$API_RESPONSE" | jq -r '.error'
   exit 1
 else
-  echo "Déploiement lancé avec succès !"
+  echo "Déploiement réussi"
 fi
