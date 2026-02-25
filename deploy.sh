@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Configuration
-RENDER_SERVICE_NAME="ymessage-chat"
+RENDER_SERVICE_NAME="ymessage-hack"
 DOCKER_IMAGE="registry.gitlab.com/bachirou/ymessage-hack:$CI_COMMIT_SHORT_SHA"
 TIMEOUT=60
 

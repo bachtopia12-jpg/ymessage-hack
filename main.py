@@ -13,12 +13,12 @@ import functools
 from database import init_db
 
 app = Flask(__name__)
-app.config["SECRET_KEY"] = "R09maW5nQG9uZQ=="
+app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "R09maW5nQG9uZQ==")
 app.config["DATABASE"] = "database.db"
-app.config['UPLOAD_FOLDER'] = 'static/pdfs'
+app.config['UPLOAD_FOLDER'] = 'static/uploads'
 app.config['AVATAR_FOLDER'] = 'static/avatars'
 
-socketio = SocketIO(app)
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
 
 # Initialize database on app startup
 @app.before_request

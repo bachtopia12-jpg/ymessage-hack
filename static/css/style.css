@@ -512,3 +512,84 @@ body {
 .call-controls button {
     margin-right: 10px;
 }
+
+/* Responsiveness */
+@media (max-width: 768px) {
+    .app-container {
+        flex-direction: column;
+        overflow-y: auto;
+    }
+
+    .sidebar {
+        width: 100%;
+        height: auto;
+        padding: 15px;
+        border-bottom: 1px solid var(--background-tertiary);
+    }
+
+    .main-content {
+        padding: 15px;
+        height: auto;
+        overflow: visible;
+    }
+
+    /* Auth pages */
+    .auth-container {
+        flex-direction: column;
+    }
+
+    .auth-logo-column {
+        display: none; /* Hide logo on mobile for faster login access */
+    }
+
+    .auth-form-column {
+        padding: 20px;
+    }
+
+    .auth-form {
+        width: 100%;
+        max-width: 350px;
+        padding: 25px;
+    }
+
+    /* Dashboard */
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .profile-avatar {
+        width: 90px;
+        height: 90px;
+    }
+
+    /* Room / Chat */
+    .chat-container {
+        flex-direction: column;
+    }
+
+    .messages {
+        max-height: 60vh;
+    }
+
+    .message-input {
+        flex-wrap: wrap;
+        gap: 5px;
+    }
+
+    .message-input input {
+        width: 100%;
+        margin-bottom: 5px;
+    }
+
+    .message-input button {
+        flex: 1;
+        margin-left: 0;
+        padding: 12px;
+    }
+
+    /* Video Call */
+    .modal-content {
+        width: 95%;
+        margin: 5% auto;
+    }
+}
