@@ -60,8 +60,9 @@
     </div>
 </div>
 <script>
-    var socket = io({
+    var socket = io('https://' + window.location.host, {
         transports: ['websocket', 'polling'],
+        upgrade: true,
         secure: true
     });
 
